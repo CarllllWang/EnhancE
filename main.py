@@ -126,7 +126,7 @@ def main(args):
                 losses += loss.item()
 
         print("Iteration#: {}, loss: {}".format(it, losses))
-        if (it % 500 == 0 and it != 0) or (it == args.num_iterations):
+        if (it % 100 == 0 and it != 0) or (it == args.num_iterations):
             with torch.no_grad():
                 print("validation:")
                 tester = Tester(dataset, model, "valid", args.model)

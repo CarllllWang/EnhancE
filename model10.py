@@ -125,8 +125,7 @@ class HyperNet(BaseClass):
         r = self.R(r_idx)
 
         if batch.shape[1] == 3:
-            # e1 = self.convolve(r, self.E(batch[:, 1]), 0)*ms[:, 0].view(-1, 1) + bs[:, 0].view(-1, 1)
-            # e2 = self.convolve(r, self.E(batch[:, 2]), 1)*ms[:, 1].view(-1, 1) + bs[:, 1].view(-1, 1)
+
             e1 = self.convolve(r, self.E(batch[:, 1]), 0) * ms[:,0].view(-1, 1) + bs[:,0].view(-1, 1)
             e2 = self.convolve(r, self.E(batch[:, 2]), 1) * ms[:,1].view(-1, 1) + bs[:,1].view(-1, 1)
 
@@ -135,21 +134,10 @@ class HyperNet(BaseClass):
 
             e1_e2_att = torch.exp(self.leakyrelu(torch.mm(e12, self.a2))) / torch.exp(self.leakyrelu(torch.mm(e12, self.a2)))
             e2_e1_att = torch.exp(self.leakyrelu(torch.mm(e21, self.a2))) / torch.exp(self.leakyrelu(torch.mm(e21, self.a2)))
-            # e1 = self.linear(torch.cat((e1, torch.tanh(e2*e1_e2_att)), dim=1))
-            # e2 = self.linear(torch.cat((e2, torch.tanh(e1*e2_e1_att)), dim=1))
 
-            # new_e1 = torch.mm(torch.cat((e1, (z2*e1_e2_att)), dim=1), self.W0)
-            # new_e2 = torch.mm(torch.cat((e2, (z1*e2_e1_att)), dim=1), self.W0)
 
             new_e1 = torch.mm(e1, self.W2) + torch.tanh(e12*e1_e2_att)
             new_e2 = torch.mm(e2, self.W2) + torch.tanh(e21*e2_e1_att)
-
-            # re1 = self.er_pos_emb(r, e1)
-            # re2 = self.er_pos_emb(r, e2)
-            # re1_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))))
-            # re2_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))))
-            #
-            # r = torch.mm(r, self.W3) + torch.tanh(re1*re1_att.view(-1, 1) + re2*re2_att.view(-1, 1))
 
 
             e = new_e1 * new_e2 * r
@@ -173,20 +161,10 @@ class HyperNet(BaseClass):
             e3_e2_att = torch.exp(self.leakyrelu(torch.mm(e32, self.a3))) / (torch.exp(self.leakyrelu(torch.mm(e31, self.a3))) + torch.exp(self.leakyrelu(torch.mm(e32, self.a3))))
 
 
-            # re1 = self.er_pos_emb(r, e1)
-            # re2 = self.er_pos_emb(r, e2)
-            # re3 = self.er_pos_emb(r, e3)
-            # re1_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))))
-            # re2_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))))
-            # re3_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))))
-            #
-            # r = torch.mm(r, self.W3) + torch.tanh(re1*re1_att.view(-1, 1) + re2*re2_att.view(-1, 1) + re3*re3_att.view(-1, 1))
             new_e1 = torch.mm(e1, self.W2) + torch.tanh(e12*e1_e2_att + e13*e1_e3_att)
             new_e2 = torch.mm(e2, self.W2) + torch.tanh(e21*e2_e1_att + e23*e2_e3_att)
             new_e3 = torch.mm(e3, self.W2) + torch.tanh(e31*e3_e1_att + e32*e3_e2_att)
-            # e1 = torch.mm(torch.cat((e1, (e2*e1_e2_att + e3*e1_e3_att)), dim=1), self.W0)
-            # e2 = torch.mm(torch.cat((e2, (e1*e2_e1_att + e3*e2_e3_att)), dim=1), self.W0)
-            # e3 = torch.mm(torch.cat((e3, (e1*e3_e1_att + e2*e3_e2_att)), dim=1), self.W0)
+
 
             e = new_e1 * new_e2 * new_e3 * r
 
@@ -223,29 +201,10 @@ class HyperNet(BaseClass):
             e4_e2_att = torch.exp(self.leakyrelu(torch.mm(e42, self.a4))) / (torch.exp(self.leakyrelu(torch.mm(e31, self.a4))) + torch.exp(self.leakyrelu(torch.mm(e42, self.a4))) + torch.exp(self.leakyrelu(torch.mm(e43, self.a4))))
             e4_e3_att = torch.exp(self.leakyrelu(torch.mm(e43, self.a4))) / (torch.exp(self.leakyrelu(torch.mm(e31, self.a4))) + torch.exp(self.leakyrelu(torch.mm(e42, self.a4))) + torch.exp(self.leakyrelu(torch.mm(e43, self.a4))))
 
-            # new_e1 = torch.mm(torch.cat((e1, (z2*e1_e2_att + z3*e1_e3_att + z4*e1_e4_att)), dim=1), self.W0)
-            # new_e2 = torch.mm(torch.cat((e2, (z1*e2_e1_att + z3*e2_e3_att + z4*e2_e4_att)), dim=1), self.W0)
-            # new_e3 = torch.mm(torch.cat((e3, (z1*e3_e1_att + z2*e3_e2_att + z4*e3_e4_att)), dim=1), self.W0)
-            # new_e4 = torch.mm(torch.cat((e4, (z1*e4_e1_att + z2*e4_e2_att + z3*e4_e3_att)), dim=1), self.W0)
             new_e1 = torch.mm(e1, self.W2) + torch.tanh(e12 * e1_e2_att + e13 * e1_e3_att + e14 * e1_e4_att)
             new_e2 = torch.mm(e2, self.W2) + torch.tanh(e21 * e2_e1_att + e23 * e2_e3_att + e24 * e2_e4_att)
             new_e3 = torch.mm(e3, self.W2) + torch.tanh(e31 * e3_e1_att + e32 * e3_e2_att + e34 * e3_e4_att)
             new_e4 = torch.mm(e4, self.W2) + torch.tanh(e41 * e4_e1_att + e42 * e4_e2_att + e43 * e4_e3_att)
-
-            # re1 = self.er_pos_emb(r, e1)
-            # re2 = self.er_pos_emb(r, e2)
-            # re3 = self.er_pos_emb(r, e3)
-            # re4 = self.er_pos_emb(r, e4)
-            # re1_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))))
-            # re2_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))))
-            # re3_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))))
-            # re4_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))))
-            #
-            # # re1_att = torch.exp(self.leakyrelu(re1)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)))
-            # # re2_att = torch.exp(self.leakyrelu(re2)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)))
-            # # re3_att = torch.exp(self.leakyrelu(re3)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)))
-            # # re4_att = torch.exp(self.leakyrelu(re4)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)))
-            # r = torch.mm(r, self.W3) + torch.tanh(re1*re1_att.view(-1, 1) + re2*re2_att.view(-1, 1) + re3*re3_att.view(-1, 1) + re4*re4_att.view(-1, 1))
 
 
             e = new_e1 * new_e2 * new_e3 * new_e4 * r
@@ -302,31 +261,7 @@ class HyperNet(BaseClass):
             e5_e3_att = torch.exp(self.leakyrelu(torch.mm(e53, self.a5))) / (torch.exp(self.leakyrelu(torch.mm(e51, self.a5))) + torch.exp(self.leakyrelu(torch.mm(e52, self.a5))) + torch.exp(self.leakyrelu(torch.mm(e53, self.a5))) + torch.exp(self.leakyrelu(torch.mm(e54, self.a5))))
             e5_e4_att = torch.exp(self.leakyrelu(torch.mm(e54, self.a5))) / (torch.exp(self.leakyrelu(torch.mm(e51, self.a5))) + torch.exp(self.leakyrelu(torch.mm(e52, self.a5))) + torch.exp(self.leakyrelu(torch.mm(e53, self.a5))) + torch.exp(self.leakyrelu(torch.mm(e54, self.a5))))
 
-            # re1 = self.er_pos_emb(r, e1)
-            # re2 = self.er_pos_emb(r, e2)
-            # re3 = self.er_pos_emb(r, e3)
-            # re4 = self.er_pos_emb(r, e4)
-            # re5 = self.er_pos_emb(r, e5)
-            # # re1_att = torch.exp(self.leakyrelu(re1)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re2_att = torch.exp(self.leakyrelu(re2)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re3_att = torch.exp(self.leakyrelu(re3)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re4_att = torch.exp(self.leakyrelu(re4)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re5_att = torch.exp(self.leakyrelu(re5)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # r = re1 * re1_att + re2 * re2_att + re3 * re3_att + re4 * re4_att + re5 * re5_att
-            # re1_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))))
-            # re2_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))))
-            # re3_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))))
-            # re4_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))))
-            # re5_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))))
-            #
-            # r = torch.mm(r, self.W3) + torch.tanh(re1*re1_att.view(-1, 1) + re2*re2_att.view(-1, 1) + re3*re3_att.view(-1, 1) + re4*re4_att.view(-1, 1) + re5*re5_att.view(-1, 1))
 
-
-            # new_e1 = torch.mm(torch.cat((e1, (z2*e1_e2_att + z3*e1_e3_att + z4*e1_e4_att + z5*e1_e5_att)), dim=1), self.W0)
-            # new_e2 = torch.mm(torch.cat((e2, (z1*e2_e1_att + z3*e2_e3_att + z4*e2_e4_att + z5*e2_e5_att)), dim=1), self.W0)
-            # new_e3 = torch.mm(torch.cat((e3, (z1*e3_e1_att + z2*e3_e2_att + z4*e3_e4_att + z5*e3_e5_att)), dim=1), self.W0)
-            # new_e4 = torch.mm(torch.cat((e4, (z1*e4_e1_att + z2*e4_e2_att + z3*e4_e3_att + z5*e4_e5_att)), dim=1), self.W0)
-            # new_e5 = torch.mm(torch.cat((e5, (z1*e5_e1_att + z2*e5_e2_att + z3*e5_e3_att + z4*e5_e4_att)), dim=1), self.W0)
             new_e1 = torch.mm(e1, self.W2) + torch.tanh(e12*e1_e2_att + e13*e1_e3_att + e14*e1_e4_att + e15*e1_e5_att)
             new_e2 = torch.mm(e2, self.W2) + torch.tanh(e21*e2_e1_att + e23*e2_e3_att + e24*e2_e4_att + e25*e2_e5_att)
             new_e3 = torch.mm(e3, self.W2) + torch.tanh(e31*e3_e1_att + e32*e3_e2_att + e34*e3_e4_att + e35*e3_e5_att)
@@ -406,26 +341,6 @@ class HyperNet(BaseClass):
             e6_e5_att = torch.exp(self.leakyrelu(torch.mm(e65, self.a6))) / (torch.exp(self.leakyrelu(torch.mm(e61, self.a6))) + torch.exp(self.leakyrelu(torch.mm(e62, self.a6))) + torch.exp(self.leakyrelu(torch.mm(e63, self.a6))) + torch.exp(self.leakyrelu(torch.mm(e64, self.a6))) + torch.exp(self.leakyrelu(torch.mm(e65, self.a6))))
 
 
-            # re1 = self.er_pos_emb(r, e1)
-            # re2 = self.er_pos_emb(r, e2)
-            # re3 = self.er_pos_emb(r, e3)
-            # re4 = self.er_pos_emb(r, e4)
-            # re5 = self.er_pos_emb(r, e5)
-            # re6 = self.er_pos_emb(r, e6)
-            # # re1_att = torch.exp(self.leakyrelu(re1)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re2_att = torch.exp(self.leakyrelu(re2)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re3_att = torch.exp(self.leakyrelu(re3)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re4_att = torch.exp(self.leakyrelu(re4)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re5_att = torch.exp(self.leakyrelu(re5)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # r = re1 * re1_att + re2 * re2_att + re3 * re3_att + re4 * re4_att + re5 * re5_att
-            # re1_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))))
-            # re2_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))))
-            # re3_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))))
-            # re4_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))))
-            # re5_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))))
-            # re6_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))))
-            #
-            # r = torch.mm(r, self.W3) + torch.tanh(re1*re1_att.view(-1, 1) + re2*re2_att.view(-1, 1) + re3*re3_att.view(-1, 1) + re4*re4_att.view(-1, 1) + re5*re5_att.view(-1, 1) + re6*re6_att.view(-1, 1))
 
 
             new_e1 = torch.mm(e1, self.W2) + torch.tanh(e12*e1_e2_att + e13*e1_e3_att + e14*e1_e4_att + e15*e1_e5_att + e16*e1_e6_att)
@@ -488,28 +403,6 @@ class HyperNet(BaseClass):
             e75 = torch.mm(torch.cat((e7, e5, r), dim=1), self.W07)
             e76 = torch.mm(torch.cat((e7, e6, r), dim=1), self.W07)
 
-            # re1 = self.er_pos_emb(r, e1)
-            # re2 = self.er_pos_emb(r, e2)
-            # re3 = self.er_pos_emb(r, e3)
-            # re4 = self.er_pos_emb(r, e4)
-            # re5 = self.er_pos_emb(r, e5)
-            # re6 = self.er_pos_emb(r, e6)
-            # re7 = self.er_pos_emb(r, e7)
-            #
-            # # re1_att = torch.exp(self.leakyrelu(re1)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re2_att = torch.exp(self.leakyrelu(re2)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re3_att = torch.exp(self.leakyrelu(re3)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re4_att = torch.exp(self.leakyrelu(re4)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # re5_att = torch.exp(self.leakyrelu(re5)) / (torch.exp(self.leakyrelu(re1)) + torch.exp(self.leakyrelu(re2)) + torch.exp(self.leakyrelu(re3)) + torch.exp(self.leakyrelu(re4)) + torch.exp(self.leakyrelu(re5)))
-            # # r = re1 * re1_att + re2 * re2_att + re3 * re3_att + re4 * re4_att + re5 * re5_att
-            # re1_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))))
-            # re2_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))))
-            # re3_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))))
-            # re4_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))))
-            # re5_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))))
-            # re6_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))))
-            # re7_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))))
-            # r = torch.mm(r, self.W3) + torch.tanh(re1*re1_att.view(-1, 1) + re2*re2_att.view(-1, 1) + re3*re3_att.view(-1, 1) + re4*re4_att.view(-1, 1) + re5*re5_att.view(-1, 1) + re6*re6_att.view(-1, 1) + re7*re7_att.view(-1, 1))
 
             e1_e2_att = torch.exp(self.leakyrelu(torch.mm(e12, self.a7))) / (torch.exp(self.leakyrelu(torch.mm(e12, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e13, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e14, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e15, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e16, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e17, self.a7))))
             e1_e3_att = torch.exp(self.leakyrelu(torch.mm(e13, self.a7))) / (torch.exp(self.leakyrelu(torch.mm(e12, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e13, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e14, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e15, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e16, self.a7))) + torch.exp(self.leakyrelu(torch.mm(e17, self.a7))))
@@ -632,24 +525,6 @@ class HyperNet(BaseClass):
             e86 = torch.mm(torch.cat((e8, e6, r), dim=1), self.W08)
             e87 = torch.mm(torch.cat((e8, e7, r), dim=1), self.W08)
 
-            # re1 = self.er_pos_emb(r, e1)
-            # re2 = self.er_pos_emb(r, e2)
-            # re3 = self.er_pos_emb(r, e3)
-            # re4 = self.er_pos_emb(r, e4)
-            # re5 = self.er_pos_emb(r, e5)
-            # re6 = self.er_pos_emb(r, e6)
-            # re7 = self.er_pos_emb(r, e7)
-            # re8 = self.er_pos_emb(r, e8)
-            #
-            # re1_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))))
-            # re2_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))))
-            # re3_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))))
-            # re4_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))))
-            # re5_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))))
-            # re6_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))))
-            # re7_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))))
-            # re8_att = torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))) / (torch.exp(self.leakyrelu(torch.cosine_similarity(r, e1, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e2, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e3, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e4, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e5, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e6, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e7, dim=1))) + torch.exp(self.leakyrelu(torch.cosine_similarity(r, e8, dim=1))))
-            # r = torch.mm(r, self.W3) + torch.tanh(re1*re1_att.view(-1, 1) + re2*re2_att.view(-1, 1) + re3*re3_att.view(-1, 1) + re4*re4_att.view(-1, 1) + re5*re5_att.view(-1, 1) + re6*re6_att.view(-1, 1) + re7*re7_att.view(-1, 1) + re8*re8_att.view(-1, 1))
 
             e1_e2_att = torch.exp(self.leakyrelu(torch.mm(e12, self.a8))) / (torch.exp(self.leakyrelu(torch.mm(e12, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e13, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e14, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e15, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e16, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e17, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e18, self.a8))))
             e1_e3_att = torch.exp(self.leakyrelu(torch.mm(e13, self.a8))) / (torch.exp(self.leakyrelu(torch.mm(e12, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e13, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e14, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e15, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e16, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e17, self.a8))) + torch.exp(self.leakyrelu(torch.mm(e18, self.a8))))
