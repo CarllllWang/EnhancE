@@ -6,8 +6,10 @@
 
 import os
 import numpy as np
-import torch
 from collections import defaultdict
+import mindspore
+import x2ms_adapter
+import x2ms_adapter.third_party_adapter.numpy_api as x2ms_np
 
 
 class Dataset:
@@ -26,7 +28,7 @@ class Dataset:
 
 
     def load_data(self, data_dir, arity_lst):
-        print("Loading {} Dataset".format(data_dir.split("/")[-1]))
+        print("Loading {} Dataset".format(x2ms_adapter.tensor_api.split(data_dir, "/")[-1]))
         self.train = self.read_tuples(os.path.join(data_dir, "train.txt"), arity_lst, "train")
         self.valid = self.read_tuples(os.path.join(data_dir, "valid.txt"), arity_lst, "valid")
         self.test = self.read_tuples(os.path.join(data_dir, "test.txt"), arity_lst, "test")
@@ -76,7 +78,7 @@ class Dataset:
         with open(dataset) as f:
             lines = f.readlines()
             for line in lines:
-                line = line.strip().split("\t")
+                line = x2ms_adapter.tensor_api.split(line.strip(), "\t")
                 rel = self.rel2id[line[0]]
                 ents = [self.ent2id[i] for i in line[1:]]
                 arity = len(ents)
@@ -94,7 +96,7 @@ class Dataset:
         with open(os.path.join(path, "entities.dict")) as f:
             lines = f.readlines()
             for line in lines:
-                line = line.strip().split("\t")
+                line = x2ms_adapter.tensor_api.split(line.strip(), "\t")
                 id, ent = line[0], line[1]
                 if ent not in ent2id:
                     ent2id[ent] = int(id)+1
@@ -103,7 +105,7 @@ class Dataset:
         with open(os.path.join(path, "relations.dict")) as f:
             lines = f.readlines()
             for line in lines:
-                line = line.strip().split("\t")
+                line = x2ms_adapter.tensor_api.split(line.strip(), "\t")
                 id, rel = line[0], line[1]
                 if rel not in rel2id:
                     rel2id[rel] = int(id)+1
@@ -125,7 +127,7 @@ class Dataset:
     def next_batch(self, batch_size, neg_ratio, arity, device):
         pos_batch = self.next_pos_batch(batch_size, arity)
         batch = self.generate_neg(pos_batch, neg_ratio, arity)
-        batch = torch.tensor(batch).long().to(device)
+        batch = x2ms_adapter.to(x2ms_adapter.tensor_api.long(x2ms_adapter.x2ms_tensor(batch)), device)
 
         ms = np.zeros((len(batch), self.arity_lst[-1]))
         bs = np.ones((len(batch), self.arity_lst[-1]))
@@ -134,14 +136,14 @@ class Dataset:
             ms[i][0:arities[i]] = 1
             bs[i][0:arities[i]] = 0
 
-        ms = torch.tensor(ms).float().to(device)
-        bs = torch.tensor(bs).float().to(device)
+        ms = x2ms_adapter.to(x2ms_adapter.tensor_api.x2ms_float(x2ms_adapter.x2ms_tensor(ms)), device)
+        bs = x2ms_adapter.to(x2ms_adapter.tensor_api.x2ms_float(x2ms_adapter.x2ms_tensor(bs)), device)
         return batch, ms, bs
 
     def generate_neg(self, pos_batch, neg_ratio, arity):
-        arities = [arity + 2 - (t == 0).sum() for t in pos_batch[:, 1:]]
+        arities = [arity + 2 - x2ms_adapter.tensor_api.x2ms_sum((t == 0)) for t in pos_batch[:, 1:]]
         pos_batch[:, -1] = arities
-        neg_batch = np.concatenate([self.neg_each(np.repeat([c], neg_ratio * arities[i] + 1, axis=0), arities[i], neg_ratio) for i, c in enumerate(pos_batch)], axis=0)
+        neg_batch = x2ms_np.concatenate([self.neg_each(x2ms_adapter.tensor_api.repeat(np, [c], neg_ratio * arities[i] + 1, axis=0), arities[i], neg_ratio) for i, c in enumerate(pos_batch)], axis=0)
         return neg_batch
 
     def neg_each(self, arr, arity, nr):
@@ -162,7 +164,7 @@ if __name__ == '__main__':
     # arity = [2, 4, 5]
     arity = [2]
     # arity = [2, 4, 5]
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = x2ms_adapter.Device("cuda:0" if x2ms_adapter.is_cuda_available() else "cpu")
     dataset = Dataset(datadir, arity, device)
     print(dataset.inc[2])
 

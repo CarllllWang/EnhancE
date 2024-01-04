@@ -1,0 +1,5 @@
+File,Start Line,End Line,Api,Type,Tips
+main.py,20,20,torch.save,CUSTOM_SUPPORTED,"The corresponding api of ""torch.save"" is ""mindspore.save_checkpoint"", will be converted to ""x2ms_adapter.save"" by x2mindspore."
+main.py,28,28,torch.save,CUSTOM_SUPPORTED,"The corresponding api of ""torch.save"" is ""mindspore.save_checkpoint"", will be converted to ""x2ms_adapter.save"" by x2mindspore."
+main.py,29,29,torch.save,CUSTOM_SUPPORTED,"The corresponding api of ""torch.save"" is ""mindspore.save_checkpoint"", will be converted to ""x2ms_adapter.save"" by x2mindspore."
+main.py,96,96,torch.nn.CrossEntropyLoss,CUSTOM_SUPPORTED,"The corresponding api of ""torch.nn.CrossEntropyLoss"" is ""mindspore.nn.SoftmaxCrossEntropyWithLogits"", will be converted to ""loss_wrapper.CrossEntropyLoss"" by x2mindspore."

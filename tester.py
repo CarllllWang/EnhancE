@@ -1,15 +1,16 @@
-import torch
 from data_process import Dataset
 import numpy as np
 from measure import Measure
 from os import listdir
 from os.path import isfile, join
+import mindspore
+import x2ms_adapter
 
 class Tester:
     def __init__(self, dataset, model, valid_or_test, model_name):
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = x2ms_adapter.Device('cuda:0' if x2ms_adapter.is_cuda_available() else 'cpu')
         self.model = model
-        self.model.eval()
+        x2ms_adapter.x2ms_eval(self.model)
         self.dataset = dataset
         self.ary_list = self.dataset.arity_lst
         self.model_name = model_name
@@ -19,7 +20,7 @@ class Tester:
 
     def get_rank(self, sim_scores):
         # Assumes the test fact is the first one
-        return (sim_scores >= sim_scores[0]).sum()
+        return x2ms_adapter.tensor_api.x2ms_sum((sim_scores >= sim_scores[0]))
 
     def create_queries(self, fact, position):
         if len(fact) == 3:
@@ -220,10 +221,10 @@ class Tester:
                     ms[:, 0:arity] = 1
                     bs[:, 0:arity] = 0
 
-                    ms = torch.tensor(ms).float().to(self.device)
-                    bs = torch.tensor(bs).float().to(self.device)
+                    ms = x2ms_adapter.to(x2ms_adapter.tensor_api.x2ms_float(x2ms_adapter.x2ms_tensor(ms)), self.device)
+                    bs = x2ms_adapter.to(x2ms_adapter.tensor_api.x2ms_float(x2ms_adapter.x2ms_tensor(bs)), self.device)
 
-                    sim_scores = self.model(batch, ms, bs).cpu().data.numpy()
+                    sim_scores = x2ms_adapter.tensor_api.numpy(self.model(batch, ms, bs).data)
                     # sim_scores = self.model(batch).cpu().data.numpy()
 
                     # Get the rank and update the measures
@@ -238,7 +239,7 @@ class Tester:
 
     def shred_facts(self, tuples):
 
-        tuples = torch.LongTensor(tuples).to(self.device)
+        tuples = x2ms_adapter.to(x2ms_adapter.LongTensor(tuples), self.device)
         # r  = [tuples[i][0] for i in range(len(tuples))]
         # e1 = [tuples[i][1] for i in range(len(tuples))]
         # e2 = [tuples[i][2] for i in range(len(tuples))]
